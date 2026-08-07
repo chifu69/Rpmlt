@@ -131,10 +131,11 @@
     const people=(state.personnel||[]).filter(p=>p.employeeNumber&&p.name&&p.status==='Active');
     const metrics=people.map(p=>({...p,...personMetrics(p)}));
     const readiness=metrics.length?Math.round(metrics.reduce((n,x)=>n+x.pct,0)/metrics.length):0;
-    const open=(state.actions||[]).filter(a=>a.status!=='Closed');
+    const actionRows=window.correctiveActionRepository?window.correctiveActionRepository():(state.actions||[]);
+    const open=actionRows.filter(a=>a.status!=='Closed');
     const overdue=open.filter(a=>a.targetDate&&a.targetDate<today());
     const critical=(state.results||[]).filter(r=>r.criticality==='Critical Gate'&&r.result!=='GO'&&r.result!=='NOT EVALUATED');
-    const due=(state.actions||[]).filter(a=>a.reassessmentDate&&a.reassessmentDate>=today()).slice(0,4);
+    const due=actionRows.filter(a=>a.reassessmentDate&&a.reassessmentDate>=today()).slice(0,4);
     const ready=metrics.filter(x=>x.pct===100&&!x.open&&!x.critical).length;
     const shifts=['A','B','C','D'].map(sh=>{const r=metrics.filter(x=>x.shift===sh);return{shift:sh,count:r.length,pct:r.length?Math.round(r.reduce((a,x)=>a+x.pct,0)/r.length):0}});
     const weakest=[...shifts].filter(x=>x.count).sort((a,b)=>a.pct-b.pct)[0];

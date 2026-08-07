@@ -24,3 +24,11 @@ Replace the previous repository contents with every file in this package. An alr
 - Every notification carries the exact corrective-action ID.
 - Tapping a corrective-action notification opens that record directly for retraining, reassessment, and closure.
 - Existing corrective actions missing IDs are repaired locally without deleting history.
+
+
+## v9.8.1 Upcoming Action + Chad Admin Fix
+- Corrective Actions now preserves and displays `Upcoming` status in `All statuses`.
+- Added explicit `Upcoming` filter.
+- Dashboard Open Actions and Corrective Actions now share the same corrective-action repository.
+- Added `Chad walker` login as Administrator; existing browser profiles are migrated automatically.
+- Temporary password: `Chad123` and password change is required on first login.

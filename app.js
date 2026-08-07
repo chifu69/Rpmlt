@@ -4,6 +4,7 @@ const DATA_KEY='k1-metl-v30-data',AUTH_KEY='k1-metl-v30-auth',AUTH_RESET_KEY='rp
 const levelRank={'-10':1,'-20':2,'-30':3,'-40':4};
 const defaultUsers=[
 {username:'Administrator',name:'System Administrator',role:'admin',password:'Admin123',mustChange:true,maxLevel:'-40'},
+{username:'Chad walker',name:'Chad Walker',role:'admin',password:'Chad123',mustChange:true,maxLevel:'-40',evaluatorId:'EV-01',manageMetl:true,managePersonnel:true},
 {username:'Kevin',name:'Kevin Buckner',role:'evaluator',password:'Kevin123',mustChange:true,maxLevel:'-40'},
 {username:'Tony',name:'Tony Morton',role:'evaluator',password:'Tony123',mustChange:true,maxLevel:'-40'},
 {username:'Dewayne',name:'Dewayne',role:'evaluator',password:'Dewayne123',mustChange:true,maxLevel:'-40'},
@@ -11,7 +12,7 @@ const defaultUsers=[
 let state,currentUser,pendingUser,view='dashboard';
 function clone(v){return JSON.parse(JSON.stringify(v))}
 function esc(v=''){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
-function loadUsers(){try{const u=JSON.parse(localStorage.getItem(AUTH_KEY));const users=Array.isArray(u)&&u.length?u:clone(defaultUsers);const people=(window.METL_BASELINE?.personnel||[]).filter(p=>p.employeeNumber&&p.name&&p.status==='Active'&&['-10','-20'].includes(p.assignedLevel));for(const p of people){if(!users.some(x=>x.username===String(p.employeeNumber)))users.push({username:String(p.employeeNumber),name:p.name,employeeNumber:String(p.employeeNumber),role:'viewer',password:'RP'+p.employeeNumber,mustChange:true,maxLevel:p.assignedLevel,language:'en'})}if(localStorage.getItem(AUTH_RESET_KEY)!=='done'){let admin=users.find(x=>x.username==='Administrator');if(!admin){admin=clone(defaultUsers[0]);users.unshift(admin)}admin.password='Admin123';admin.mustChange=true;admin.disabled=false;admin.role='admin';localStorage.setItem(AUTH_RESET_KEY,'done')}localStorage.setItem(AUTH_KEY,JSON.stringify(users));return users}catch{return clone(defaultUsers)}}
+function loadUsers(){try{const u=JSON.parse(localStorage.getItem(AUTH_KEY));const users=Array.isArray(u)&&u.length?u:clone(defaultUsers);const people=(window.METL_BASELINE?.personnel||[]).filter(p=>p.employeeNumber&&p.name&&p.status==='Active'&&['-10','-20'].includes(p.assignedLevel));for(const p of people){if(!users.some(x=>x.username===String(p.employeeNumber)))users.push({username:String(p.employeeNumber),name:p.name,employeeNumber:String(p.employeeNumber),role:'viewer',password:'RP'+p.employeeNumber,mustChange:true,maxLevel:p.assignedLevel,language:'en'})}let chad=users.find(x=>String(x.username||'').toLowerCase()==='chad walker');if(!chad){chad=clone(defaultUsers.find(x=>String(x.username||'').toLowerCase()==='chad walker'));users.push(chad)}Object.assign(chad,{name:'Chad Walker',role:'admin',maxLevel:'-40',disabled:false,evaluatorId:'EV-01',manageMetl:true,managePersonnel:true});if(!chad.password){chad.password='Chad123';chad.mustChange=true}if(localStorage.getItem(AUTH_RESET_KEY)!=='done'){let admin=users.find(x=>x.username==='Administrator');if(!admin){admin=clone(defaultUsers[0]);users.unshift(admin)}admin.password='Admin123';admin.mustChange=true;admin.disabled=false;admin.role='admin';localStorage.setItem(AUTH_RESET_KEY,'done')}localStorage.setItem(AUTH_KEY,JSON.stringify(users));return users}catch{return clone(defaultUsers)}}
 let authUsers=loadUsers(); function saveUsers(){localStorage.setItem(AUTH_KEY,JSON.stringify(authUsers))}
 function employeePhoto(p,cls='employee-photo'){return p?.photo?`<img class="${cls}" src="${p.photo}" alt="${esc(p.name||'Employee')} photo">`:`<div class="${cls} photo-placeholder">${esc((p?.name||'?').trim().charAt(0).toUpperCase()||'?')}</div>`}
 function readEmployeePhoto(file,done){if(!file)return done('');if(!file.type.startsWith('image/'))return toast('Choose an image file');if(file.size>12*1024*1024)return toast('Photo is too large');const r=new FileReader();r.onload=()=>{const img=new Image();img.onload=()=>{const max=480,scale=Math.min(1,max/Math.max(img.width,img.height)),w=Math.max(1,Math.round(img.width*scale)),h=Math.max(1,Math.round(img.height*scale)),c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);done(c.toDataURL('image/jpeg',.78))};img.onerror=()=>toast('Unable to read photo');img.src=r.result};r.readAsDataURL(file)}
@@ -212,7 +213,7 @@ function correctiveActionRepository(){
     if(!a.id){a.id=uid('CA');changed=true}
     const person=state.personnel.find(p=>String(p.employeeNumber||'')===String(a.employeeNumber||''));
     if(!a.employee&&person?.name){a.employee=person.name;changed=true}
-    const normalizedStatus=String(a.status||'').toLowerCase()==='closed'?'Closed':'Open';
+    const rawStatus=String(a.status||'').trim().toLowerCase();const normalizedStatus=rawStatus==='closed'?'Closed':rawStatus==='upcoming'?'Upcoming':'Open';
     if(a.status!==normalizedStatus){a.status=normalizedStatus;changed=true}
     if(!a.criticality)a.criticality='Supporting';
   }
@@ -220,13 +221,15 @@ function correctiveActionRepository(){
   return [...state.actions].sort((a,b)=>(a.status==='Closed')-(b.status==='Closed')||(a.targetDate||'9999-12-31').localeCompare(b.targetDate||'9999-12-31')||(a.created||'').localeCompare(b.created||''));
 }
 
+window.correctiveActionRepository=correctiveActionRepository;
+
 function actions(focusActionId=''){
   const rows=correctiveActionRepository();
-  page('Corrective Actions & Reassessment','Original failed assessments remain unchanged; closure requires demonstrated competency',`<div class="filters"><select id="caStatus"><option value="">All statuses</option><option>Open</option><option>Closed</option></select><input id="caSearch" placeholder="Search associate or task"></div><div id="caTable"></div>`);
+  page('Corrective Actions & Reassessment','Original failed assessments remain unchanged; closure requires demonstrated competency',`<div class="filters"><select id="caStatus"><option value="">All statuses</option><option>Open</option><option>Upcoming</option><option>Closed</option></select><input id="caSearch" placeholder="Search associate or task"></div><div id="caTable"></div>`);
   const draw=()=>{
     const st=$('#caStatus').value,q=String($('#caSearch').value||'').toLowerCase().trim();
     const f=rows.filter(a=>(!st||a.status===st)&&(`${a.employee||''} ${a.employeeNumber||''} ${a.taskId||''} ${a.subtaskId||''} ${a.id||''}`).toLowerCase().includes(q));
-    $('#caTable').innerHTML=`<div class="table-wrap"><table><thead><tr><th>Associate</th><th>Task / Subtask</th><th>Due</th><th>Criticality</th><th>Status</th><th>Owner</th><th></th></tr></thead><tbody>${f.map(a=>`<tr class="${String(a.id)===String(focusActionId)?'focused-row':''}" data-action-row="${esc(a.id)}"><td>${esc(a.employee||'Unknown associate')}</td><td>${esc(a.taskId)} / ${esc(a.subtaskId)}</td><td class="${a.status!=='Closed'&&a.targetDate&&a.targetDate<today()?'overdue':''}">${esc(a.targetDate||'')}</td><td><span class="pill ${a.criticality==='Critical Gate'?'critical':'ne'}">${esc(a.criticality)}</span></td><td>${esc(a.status)}</td><td>${esc(a.responsibleTrainer||a.owner||'')}</td><td><button class="secondary cav" data-id="${esc(a.id)}">Open</button></td></tr>`).join('')||'<tr><td colspan="7">No corrective actions.</td></tr>'}</tbody></table></div>`;
+    $('#caTable').innerHTML=`<div class="table-wrap"><table><thead><tr><th>Associate</th><th>Task / Subtask</th><th>Due</th><th>Criticality</th><th>Status</th><th>Owner</th><th></th></tr></thead><tbody>${f.map(a=>`<tr class="${String(a.id)===String(focusActionId)?'focused-row':''}" data-action-row="${esc(a.id)}"><td>${esc(a.employee||'Unknown associate')}</td><td>${esc(a.taskId)} / ${esc(a.subtaskId)}</td><td class="${a.status!=='Closed'&&a.targetDate&&a.targetDate<today()?'overdue':''}">${esc(a.targetDate||'')}</td><td><span class="pill ${a.criticality==='Critical Gate'?'critical':'ne'}">${esc(a.criticality)}</span></td><td><span class="pill ${a.status==='Closed'?'go':a.status==='Upcoming'?'ne':'nogo'}">${esc(a.status)}</span></td><td>${esc(a.responsibleTrainer||a.owner||'')}</td><td><button class="secondary cav" data-id="${esc(a.id)}">Open</button></td></tr>`).join('')||'<tr><td colspan="7">No corrective actions.</td></tr>'}</tbody></table></div>`;
     $$('.cav').forEach(b=>b.onclick=()=>actionDetail(b.dataset.id));
   };
   $('#caStatus').oninput=draw;$('#caSearch').oninput=draw;draw();
