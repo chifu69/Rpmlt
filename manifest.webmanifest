@@ -1,0 +1,32 @@
+{
+  "name": "RP Enterprise \u2014 Eagle Platform",
+  "short_name": "RP",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#071426",
+  "theme_color": "#071426",
+  "description": "Enterprise competency, training, and operational intelligence platform powered by Eagle",
+  "icons": [
+    {
+      "src": "rpia-eagle-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "rpia-eagle-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "id": "./",
+  "scope": "./",
+  "lang": "en-US",
+  "orientation": "any",
+  "categories": [
+    "business",
+    "productivity",
+    "education"
+  ]
+}
