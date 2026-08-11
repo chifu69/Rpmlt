@@ -1,6 +1,6 @@
 (function(){
   const defaults={
-    version:'10.0.0-rc1',
+    version:'10.0.1-rc1',
     environment:'local',
     storageMode:'local',
     apiBaseUrl:'',

@@ -1,4 +1,4 @@
-const CACHE='rp-v10.0.0-rc1-enterprise-handoff';
+const CACHE='rp-v10.0.1-rc1-ios-safe-area';
 const ASSETS=[
   './eagle-controller.js',
   './',
